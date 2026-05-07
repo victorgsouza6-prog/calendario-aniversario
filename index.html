@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Calendário Interativo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<h1>📅 Calendário Interativo</h1>
+
+<div class="header">
+    <button onclick="prevMonth()">⬅</button>
+    <h2 id="monthYear"></h2>
+    <button onclick="nextMonth()">➡</button>
+</div>
+
+<div class="calendar" id="calendar"></div>
+
+</div>
+
+<!-- POPUP -->
+<div id="popup">
+    <h3 id="popup-title"></h3>
+    <p id="popup-text"></p>
+
+    <textarea id="note" placeholder="Escreva algo..."></textarea>
+    <br><br>
+
+    <input type="file" id="photoInput" accept="image/*">
+    <br><br>
+
+    <img id="previewPhoto" style="width:120px;border-radius:10px;display:none;">
+    <br>
+
+    <button onclick="saveNote()">Salvar</button>
+    <button onclick="closePopup()">Fechar</button>
+</div>
+
+<script>
+
+const birthdays = {
+    "1-5":"🎉 Maria",
+    "1-12":"🎂 João",
+    "2-3":"🎈 Pedro",
+    "2-14":"💖 Namorados",
+    "3-8":"🌸 Mulher",
+    "5-1":"💼 Trabalho",
+    "12-25":"🎄 Natal"
+};
+
+let currentDate = new Date();
+
+let notes = JSON.parse(localStorage.getItem("notes")) || {};
+let photos = JSON.parse(localStorage.getItem("photos")) || {};
+
+/* CALENDÁRIO */
+function renderCalendar(){
+
+    const calendar = document.getElementById("calendar");
+    calendar.innerHTML="";
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const firstDay = new Date(year,month,1).getDay();
+    const daysInMonth = new Date(year,month+1,0).getDate();
+
+    const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+    document.getElementById("monthYear").innerText =
+        months[month] + " " + year;
+
+    for(let i=0;i<firstDay;i++){
+        calendar.appendChild(document.createElement("div"));
+    }
+
+    for(let i=1;i<=daysInMonth;i++){
+
+        const day = document.createElement("div");
+        day.classList.add("day");
+
+        const key = `${month+1}-${i}`;
+        const event = birthdays[key];
+
+        day.innerHTML = `<strong>${i}</strong>`;
+
+        if(event){
+            day.innerHTML += `<small>${event}</small>`;
+            day.classList.add("birthday");
+        }
+
+        const today = new Date();
+        if(i===today.getDate() && month===today.getMonth()){
+            day.classList.add("today");
+        }
+
+        day.onclick=()=>openPopup(i,month,year);
+
+        calendar.appendChild(day);
+    }
+}
+
+/* POPUP */
+function openPopup(day,month,year){
+
+    const popup=document.getElementById("popup");
+    const title=document.getElementById("popup-title");
+    const text=document.getElementById("popup-text");
+    const note=document.getElementById("note");
+    const preview=document.getElementById("previewPhoto");
+
+    const key=`${month+1}-${day}-${year}`;
+
+    title.innerText=`Dia ${day}`;
+    text.innerText=birthdays[`${month+1}-${day}`]||"Sem evento";
+
+    note.value=notes[key]||"";
+
+    if(photos[key]){
+        preview.src=photos[key];
+        preview.style.display="block";
+    }else{
+        preview.style.display="none";
+    }
+
+    popup.style.display="block";
+    popup.setAttribute("data-key",key);
+}
+
+function closePopup(){
+    document.getElementById("popup").style.display="none";
+}
+
+/* SALVAR */
+function saveNote(){
+
+    const popup=document.getElementById("popup");
+    const key=popup.getAttribute("data-key");
+
+    const note=document.getElementById("note").value;
+    const file=document.getElementById("photoInput").files[0];
+
+    notes[key]=note;
+    localStorage.setItem("notes",JSON.stringify(notes));
+
+    if(file){
+        const reader=new FileReader();
+
+        reader.onload=function(e){
+            photos[key]=e.target.result;
+            localStorage.setItem("photos",JSON.stringify(photos));
+
+            document.getElementById("previewPhoto").src=e.target.result;
+            document.getElementById("previewPhoto").style.display="block";
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+    alert("Salvo!");
+}
+
+/* NAVEGAÇÃO */
+function prevMonth(){
+    currentDate.setMonth(currentDate.getMonth()-1);
+    renderCalendar();
+}
+
+function nextMonth(){
+    currentDate.setMonth(currentDate.getMonth()+1);
+    renderCalendar();
+}
+
+renderCalendar();
+
+</script>
+
+</body>
+</html>
